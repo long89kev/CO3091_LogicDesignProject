@@ -11,5 +11,9 @@
 #define DHT_TYPE    DHT11
 
 extern float glob_temp;
+extern float glob_humid;
+
+extern SemaphoreHandle_t xSensorMutex;
+extern SemaphoreHandle_t xSerialMutex;
 
 #endif
