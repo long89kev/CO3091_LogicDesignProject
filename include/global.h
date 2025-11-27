@@ -6,12 +6,19 @@
 #include "freertos/task.h"
 #include "freertos/semphr.h"
 
-#define LED_PIN     13
-#define DHT_PIN     27 
-#define DHT_TYPE    DHT11
+#define DHT_PIN         32     
+#define DHT_TYPE        DHT22
+
+#define PHOTODIODE_PIN  36      
+
+#define SOIL_PIN        34
 
 extern float glob_temp;
 extern float glob_humid;
+
+extern int glob_light; 
+
+extern float glob_soil;
 
 extern SemaphoreHandle_t xSensorMutex;
 extern SemaphoreHandle_t xSerialMutex;

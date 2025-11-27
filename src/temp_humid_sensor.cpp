@@ -15,8 +15,8 @@ void temp_humid_sensor(void *pvParameter)
         if (xSensorMutex != NULL &&
             xSemaphoreTake(xSensorMutex, portMAX_DELAY) == pdTRUE)
         {
-            current_temp = glob_temp;
-            current_humid = glob_humid;
+            glob_temp = current_temp;
+            glob_humid = current_humid;
             xSemaphoreGive(xSensorMutex);
         }
         vTaskDelay(pdMS_TO_TICKS(2000));
