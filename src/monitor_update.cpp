@@ -5,7 +5,6 @@ void monitor_update(void *pvParameter)
     float current_temp = 0;
     float current_humid = 0;
     float current_soil = 0;
-    int current_light = 0;
 
     while (1)
     {
@@ -14,7 +13,6 @@ void monitor_update(void *pvParameter)
         {
             current_temp = glob_temp;
             current_humid = glob_humid;
-            current_light = glob_light;
             current_soil = glob_soil;
             xSemaphoreGive(xSensorMutex);
         }
@@ -39,12 +37,6 @@ void monitor_update(void *pvParameter)
             Serial.print("%  Temperature: ");
             Serial.print(current_temp);
             Serial.println("°C");
-
-            if (current_light > 0)
-                Serial.println("Light is on");
-            else
-                Serial.println("Light is off");
-
             Serial.print("Soil Sensor measure: ");
             Serial.print(current_soil);
             Serial.println("%");
