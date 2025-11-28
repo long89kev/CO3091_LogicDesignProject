@@ -4,5 +4,4 @@
 #include "global.h"
 
 void light_sensor(void *pvParameter);
-
 #endif

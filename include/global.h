@@ -13,12 +13,16 @@
 
 #define SOIL_PIN        34
 
+#define RAIN_PIN        39
+
 extern float glob_temp;
 extern float glob_humid;
 
 extern int glob_light; 
 
 extern float glob_soil;
+
+extern float glob_rain;
 
 extern SemaphoreHandle_t xSensorMutex;
 extern SemaphoreHandle_t xSerialMutex;
