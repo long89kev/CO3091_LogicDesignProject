@@ -5,11 +5,7 @@ void monitor_update(void *pvParameter)
     float current_temp = 0;
     float current_humid = 0;
     float current_soil = 0;
-<<<<<<< HEAD
-=======
-    int current_light = 0;
     float current_rain = 0;
->>>>>>> 139d8acd4759b8faf4def99906d9a2782b21d002
 
     while (1)
     {
@@ -43,17 +39,7 @@ void monitor_update(void *pvParameter)
             Serial.print("%  Temperature: ");
             Serial.print(current_temp);
             Serial.println("°C");
-<<<<<<< HEAD
             Serial.print("Soil Sensor measure: ");
-=======
-
-            if (current_light > 0)
-                Serial.println("Light is on");
-            else
-                Serial.println("Light is off");
-
-            Serial.print("[SOIL SENSOR] measure: ");
->>>>>>> 139d8acd4759b8faf4def99906d9a2782b21d002
             Serial.print(current_soil);
             Serial.println("%");
 
