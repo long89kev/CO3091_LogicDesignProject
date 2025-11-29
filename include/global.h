@@ -29,7 +29,6 @@ extern float glob_rain;
 extern float glob_total_ml;
 extern bool glob_pump_running;
 
-extern float glob_rain;
 
 // === Mutex ===
 extern SemaphoreHandle_t xSensorMutex;

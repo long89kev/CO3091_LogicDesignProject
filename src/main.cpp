@@ -5,6 +5,7 @@
 #include "taskWiFi.h"
 #include "rain_sensor.h"
 #include "water_sensor.h"
+#include "taskMqtt.h"
 
 void setup()
 {
@@ -25,8 +26,7 @@ void setup()
   xTaskCreate(rain_sensor, "Task Rain Sensor", 2048, NULL, 2, NULL);
   xTaskCreate(water_sensor, "Task Water Flow Sensor", 4096, NULL, 2, NULL);
   xTaskCreate(task_WiFi, "Task WiFi", 4096, NULL, 3, NULL);
-  
-
+  xTaskCreate(task_MQTT, "Task MQTT", 4096, NULL, 3, NULL);
 }
 
 void loop() {}
