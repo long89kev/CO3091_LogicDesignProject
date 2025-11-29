@@ -6,10 +6,12 @@
 #include "rain_sensor.h"
 #include "water_sensor.h"
 #include "taskMqtt.h"
+#include "pump_control.h"
 
 void setup()
 {
   Serial.begin(115200);
+  pump_init();
   delay(3000);
 
   xSensorMutex = xSemaphoreCreateMutex();
@@ -19,6 +21,7 @@ void setup()
   {
     Serial.println("Failed to create mutex!");
   }
+
 
   xTaskCreate(monitor_update, "Task Printing", 2048, NULL, 1, NULL);
   xTaskCreate(temp_humid_sensor, "Task DHT", 4096, NULL, 2, NULL);
@@ -30,3 +33,5 @@ void setup()
 }
 
 void loop() {}
+
+

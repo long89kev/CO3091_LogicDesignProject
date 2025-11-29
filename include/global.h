@@ -7,28 +7,27 @@
 #include "freertos/semphr.h"
 
 // ===== Sensors PINs =====
-#define DHT_PIN         32     
-#define DHT_TYPE        DHT22    
+#define DHT_PIN 32
+#define DHT_TYPE DHT22
 
-#define SOIL_PIN        34
-#define RAIN_PIN        39
+#define SOIL_PIN 34
+#define RAIN_PIN 39
 
-#define WATER_PIN       35
+#define WATER_PIN 35
 
-#define RAIN_PIN        39
+#define RAIN_PIN 39
 
-#define PUMP_PIN        33
+#define PUMP_PIN 27
 
 // === Global variable ===
 extern float glob_temp;
-extern float glob_humid; 
+extern float glob_humid;
 
 extern float glob_soil;
 extern float glob_rain;
 
 extern float glob_total_ml;
 extern bool glob_pump_running;
-
 
 // === Mutex ===
 extern SemaphoreHandle_t xSensorMutex;

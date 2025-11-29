@@ -1,6 +1,8 @@
 #include "taskMqtt.h"
 #include <WiFi.h>
+#include <ArduinoJson.h>
 #include <PubSubClient.h> // MQTT library
+#include "pump_control.h"
 
 static const char *MQTT_SERVER = "broker.hivemq.com";
 static const uint16_t MQTT_PORT = 1883;
@@ -14,14 +16,35 @@ static WiFiClient s_espClient;                 // TCP Client
 static PubSubClient s_mqttClient(s_espClient); // vừa pub vừa sub
 
 // Callback khi nhận payload message MQTT (SUB)
+// static void mqttCallback(char *topic, uint8_t *payload, unsigned int length)
+// {
+//     // Copy payload sang 1 buffer có null-terminator để in cho dễ
+//     char buf[128];
+//     unsigned int n = (length < sizeof(buf) - 1) ? length : sizeof(buf) - 1;
+//     memcpy(buf, payload, n);
+//     buf[n] = '\0';
+
+//     if (xSerialMutex != NULL &&
+//         xSemaphoreTake(xSerialMutex, portMAX_DELAY) == pdPASS)
+//     {
+//         Serial.print("[MQTT] Message arrived on topic: ");
+//         Serial.println(topic);
+//         Serial.print("Payload: ");
+//         Serial.println(buf);
+//         xSemaphoreGive(xSerialMutex);
+//     }
+
+// }
+
 static void mqttCallback(char *topic, uint8_t *payload, unsigned int length)
 {
-    // Copy payload sang 1 buffer có null-terminator để in cho dễ
-    char buf[64];
+    // 1. Copy payload sang buffer có null-terminator
+    char buf[256];
     unsigned int n = (length < sizeof(buf) - 1) ? length : sizeof(buf) - 1;
     memcpy(buf, payload, n);
     buf[n] = '\0';
 
+    // 2. In ra Serial (có mutex)
     if (xSerialMutex != NULL &&
         xSemaphoreTake(xSerialMutex, portMAX_DELAY) == pdPASS)
     {
@@ -30,6 +53,121 @@ static void mqttCallback(char *topic, uint8_t *payload, unsigned int length)
         Serial.print("Payload: ");
         Serial.println(buf);
         xSemaphoreGive(xSerialMutex);
+    }
+
+    // 3. Parse JSON bằng ArduinoJson
+    StaticJsonDocument<256> doc; // ESP32 đủ RAM cho size này
+
+    DeserializationError err = deserializeJson(doc, buf);
+    if (err)
+    {
+        if (xSerialMutex != NULL &&
+            xSemaphoreTake(xSerialMutex, portMAX_DELAY) == pdPASS)
+        {
+            Serial.print("[MQTT] JSON parse failed: ");
+            Serial.println(err.c_str());
+            xSemaphoreGive(xSerialMutex);
+        }
+        return;
+    }
+
+    // 4. Đọc field "command"
+    const char *cmd = doc["command"] | "";
+    if (cmd[0] == '\0')
+    {
+        if (xSerialMutex != NULL &&
+            xSemaphoreTake(xSerialMutex, portMAX_DELAY) == pdPASS)
+        {
+            Serial.println("[MQTT] Missing 'command' field");
+            xSemaphoreGive(xSerialMutex);
+        }
+        return;
+    }
+
+    // 5. Đọc thêm timestamp (nếu có)
+    uint32_t timestamp = doc["timestamp"] | 0;
+
+    // 6. Xử lý theo từng loại command
+
+    // ---- pump_start ----
+    if (strcmp(cmd, "pump_start") == 0)
+    {
+        // {"command":"pump_start","timestamp":..., "duration":10,"durationMs":10000,"mode":"manual"}
+
+        uint32_t duration = doc["duration"] | 0;     // giây
+        uint32_t durationMs = doc["durationMs"] | 0; // ms
+        const char *modeJson = doc["mode"] | "manual";
+
+        if (durationMs == 0 && duration > 0)
+        {
+            durationMs = duration * 1000; // fallback: từ giây -> ms
+        }
+
+        if (xSerialMutex != NULL &&
+            xSemaphoreTake(xSerialMutex, portMAX_DELAY) == pdPASS)
+        {
+            Serial.println("[MQTT] Command: pump_start");
+            Serial.print("  timestamp = ");
+            Serial.println(timestamp);
+            Serial.print("  durationMs = ");
+            Serial.println(durationMs);
+            Serial.print("  mode = ");
+            Serial.println(modeJson);
+            xSemaphoreGive(xSerialMutex);
+        }
+
+        pump_start(durationMs, modeJson);
+    }
+    // ---- pump_stop ----
+    else if (strcmp(cmd, "pump_stop") == 0)
+    {
+        // {"command":"pump_stop","timestamp":..., "runTime":5000}
+
+        uint32_t runTime = doc["runTime"] | 0;
+
+        if (xSerialMutex != NULL &&
+            xSemaphoreTake(xSerialMutex, portMAX_DELAY) == pdPASS)
+        {
+            Serial.println("[MQTT] Command: pump_stop");
+            Serial.print("  timestamp = ");
+            Serial.println(timestamp);
+            Serial.print("  runTime   = ");
+            Serial.println(runTime);
+            xSemaphoreGive(xSerialMutex);
+        }
+
+        pump_stop(runTime);
+    }
+    // ---- set_mode ----
+    else if (strcmp(cmd, "set_mode") == 0)
+    {
+        // {"command":"set_mode","timestamp":..., "mode":"automatic"}
+
+        const char *modeJson = doc["mode"] | "";
+
+        if (xSerialMutex != NULL &&
+            xSemaphoreTake(xSerialMutex, portMAX_DELAY) == pdPASS)
+        {
+            Serial.println("[MQTT] Command: set_mode");
+            Serial.print("  timestamp = ");
+            Serial.println(timestamp);
+            Serial.print("  mode      = ");
+            Serial.println(modeJson);
+            xSemaphoreGive(xSerialMutex);
+        }
+
+        pump_set_mode(modeJson);
+    }
+    else
+    {
+        // Command lạ
+        if (xSerialMutex != NULL &&
+            xSemaphoreTake(xSerialMutex, portMAX_DELAY) == pdPASS)
+        {
+            Serial.print("[MQTT] Unknown command: ");
+            Serial.println(cmd);
+            xSemaphoreGive(xSerialMutex);
+        }
     }
 }
 
@@ -67,8 +205,7 @@ void MQTT_Connect()
 
 void task_MQTT(void *pvParameter)
 {
-    pinMode(PUMP_PIN, OUTPUT);
-    digitalWrite(PUMP_PIN, LOW);
+    pump_init();
     glob_pump_running = false;
 
     TickType_t lastWake = xTaskGetTickCount();
